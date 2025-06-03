@@ -114,8 +114,9 @@ try:
             client.moveByVelocityAsync(2, 0, 0, 2).join()
 
         # --- Optical flow processing ---
-        good_old, flow_vectors, flow_std = tracker.process_frame(gray, start_time)
-        magnitudes = np.linalg.norm(flow_vectors, axis=1)
+        good_old, flow_vectors, flow_std, dt = tracker.process_frame(gray, start_time)
+        # Convert raw pixel displacements to velocities using the returned dt
+        magnitudes = np.linalg.norm(flow_vectors, axis=1) / max(dt, 1e-6)
         h, w = gray.shape
         good_old = good_old.reshape(-1, 2)  # Ensure proper shape
         x_coords = good_old[:, 0]
