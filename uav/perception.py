@@ -35,15 +35,28 @@ class OpticalFlowTracker:
         self.prev_time = time.time()
 
     def process_frame(self, gray, _unused_start_time):  # ignore external time
+        """Process a new grayscale frame.
+
+        Returns
+        -------
+        tuple
+            A tuple ``(points, flow, flow_std, dt)`` where ``points`` are the
+            feature locations from the previous frame, ``flow`` is the raw pixel
+            displacement for those features, ``flow_std`` is the standard
+            deviation of the per-second flow magnitudes and ``dt`` is the time
+            difference to the previous frame in seconds.  Returning ``dt`` allows
+            callers to correctly scale the flow vectors.
+        """
+
         if self.prev_gray is None or self.prev_pts is None:
             self.initialize(gray)
-            return np.array([]), np.array([]), 0.0
+            return np.array([]), np.array([]), 0.0, 0.0
 
         next_pts, status, err = cv2.calcOpticalFlowPyrLK(self.prev_gray, gray, self.prev_pts, None, **self.lk_params)
 
         if next_pts is None or status is None:
             self.initialize(gray)
-            return np.array([]), np.array([]), 0.0
+            return np.array([]), np.array([]), 0.0, 0.0
 
         good_old = self.prev_pts[status.flatten() == 1]
         good_new = next_pts[status.flatten() == 1]
@@ -56,12 +69,12 @@ class OpticalFlowTracker:
         self.prev_pts = cv2.goodFeaturesToTrack(gray, mask=None, **self.feature_params)
 
         if len(good_old) == 0:
-            return np.array([]), np.array([]), 0.0
+            return np.array([]), np.array([]), 0.0, dt
 
         flow_vectors = good_new - good_old
         magnitudes = np.linalg.norm(flow_vectors, axis=1) / dt  # pixels/sec
         flow_std = np.std(magnitudes)
 
-        return good_old, flow_vectors, flow_std
+        return good_old, flow_vectors, flow_std, dt
 
 
