@@ -166,6 +166,7 @@ try:
             if navigator.braked:
                 safe_counter += 1
                 print(f"[DEBUG] clear frames: {safe_counter}/{SAFE_FRAMES}")
+
                 if safe_counter >= SAFE_FRAMES:
                     state_str = navigator.resume_forward()
                     safe_counter = 0
