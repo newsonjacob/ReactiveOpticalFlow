@@ -2,7 +2,11 @@ import cv2
 import numpy as np
 
 # Parameters
-shitomasi_params = dict(maxCorners=100, qualityLevel=0.5, minDistance=7)
+# Tune Shi-Tomasi parameters so that more features are detected from the
+# very first frame.  A lower quality level allows weaker corners to be
+# returned while a higher maxCorners value ensures we don't hit the
+# feature limit too early.
+shitomasi_params = dict(maxCorners=200, qualityLevel=0.02, minDistance=7)
 lk_params = dict(winSize=(15, 15), maxLevel=2,
                  criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
 
