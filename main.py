@@ -157,9 +157,19 @@ try:
             prev_pts = initialize_sparse_features(prev_gray_sparse)
             no_feature_frames = 0
 
-        # Skip obstacle reaction for early frames
+        threshold = 2.5 * max(speed, 0.2)
+        corridor = (
+            smooth_C <= threshold
+            and smooth_L > threshold
+            and smooth_R > threshold
+        )
+
         if frame_count < GRACE_FRAMES:
             obstacle_sparse = False
+        else:
+            obstacle_sparse = smooth_C > threshold
+            if corridor:
+                obstacle_sparse = False
 
         threshold = 2.5 * max(speed, 0.2)
         obstacle_sparse = smooth_C > threshold
