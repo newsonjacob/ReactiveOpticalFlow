@@ -82,6 +82,9 @@ out = cv2.VideoWriter('sparse_flow_output.avi', fourcc, 8.0, (640, 480))
 try:
     while not exit_flag[0]:
         frame_count += 1
+        # Reset flow history on first frame
+        if frame_count == 1:
+            flow_history = FlowHistory(alpha=0.5)
         time_now = time.time()
         dt = 0.0 if prev_time is None else time_now - prev_time
         prev_time = time_now
@@ -167,11 +170,29 @@ try:
             and smooth_R > threshold
         )
 
+        # Update threshold (disable obstacle logic during grace period)
+        if frame_count < GRACE_FRAMES:
+            threshold = float('inf')  # block obstacle detection entirely
+        else:
+            threshold = max(MIN_FLOW_THRESHOLD, 2.5 * max(speed, 0.2))
+
+        # Calculate corridor condition
+        corridor = (
+            smooth_C <= threshold
+            and smooth_L > threshold
+            and smooth_R > threshold
+        )
+
+        # Obstacle decision logic
         if frame_count < GRACE_FRAMES:
             obstacle_sparse = False
         else:
-            obstacle_sparse = smooth_C > threshold
-            if corridor:
+            if smooth_C > threshold:
+                if corridor:
+                    obstacle_sparse = False
+                else:
+                    obstacle_sparse = True
+            else:
                 obstacle_sparse = False
 
         # Navigation
