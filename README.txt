@@ -27,11 +27,15 @@ ReactiveOpticalFlow/
 
 ## How It Works
 
-1. **Startup phase**: The UAV takes off and a few initial frames are ignored.
+1. **Startup phase**: The UAV takes off and obstacle checks are skipped for the
+   first 30 frames so that feature tracking can stabilize.
 2. **Tracking**: Shi–Tomasi features are tracked frame to frame using Lucas–Kanade optical flow.
 3. **Obstacle detection**: The average magnitude of feature displacement within the ROI is compared to a threshold.
 4. **Navigation**: The Navigator brakes if an obstacle is detected, otherwise it moves forward.
-5. **Logging**: Frame number, time, speed, obstacle flag and feature count are written to a CSV file.
+5. **Logging**: Frame number, time, speed, obstacle flag and feature count are
+   written to a CSV file and overlaid in the output video.
+6. **Feature fallback**: If no features are detected for several consecutive
+   frames the tracker is reset and the UAV continues forward blindly.
 
 ## Requirements
 
