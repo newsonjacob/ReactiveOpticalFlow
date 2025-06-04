@@ -10,6 +10,7 @@ This project implements a real-time **sparse** optical flow-based navigation sys
 * 📁 Structured modular code with reusable components
 * ▶️ Automatically launches the Unreal Engine Blocks environment
 * 🖥️ Optional debug window showing tracked features when `DEBUG_DISPLAY=1`
+* 🎞️ Output video overlays flow vectors for each tracked feature
 
 ## Project Structure
 
