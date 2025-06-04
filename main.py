@@ -9,7 +9,7 @@ from airsim import ImageRequest, ImageType
 
 from uav.interface import exit_flag, start_gui
 from uav.navigation import Navigator
-from uav.utils import get_drone_state, apply_clahe
+from uav.utils import get_drone_state
 from sparse_optical_flow_utils import initialize_sparse_features, track_and_detect_obstacle
 
 # GUI state holder
@@ -18,6 +18,9 @@ param_refs = {
     'reset_flag': [False]
 }
 start_gui(param_refs)
+
+# Display debug images if environment variable is set
+DEBUG_DISPLAY = os.environ.get("DEBUG_DISPLAY", "0") == "1"
 
 # === Launch Unreal Engine simulation ===
 # Path to the Blocks executable. This can be overridden by setting the
@@ -89,7 +92,6 @@ try:
         print(f"🖼 Frame {frame_count} captured and decoded")
         img = cv2.resize(img, (640, 480))
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        gray = apply_clahe(gray)
         vis_img = img.copy()
 
         # Sparse flow detection
@@ -164,6 +166,13 @@ try:
         cv2.putText(vis_img, f"Sim Time: {time_now-start_time:.2f}s", (10, 115), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,255), 2)
         cv2.putText(vis_img, f"Features: {features_detected}", (10, 145), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,255), 2)
 
+        if DEBUG_DISPLAY and prev_pts is not None:
+            for p in prev_pts:
+                x, y = p.ravel()
+                cv2.circle(vis_img, (int(x), int(y)), 2, (0, 255, 0), -1)
+            cv2.imshow("debug", vis_img)
+            cv2.waitKey(1)
+
         out.write(vis_img)
         log_file.write(f"{frame_count},{time_now:.2f},{speed:.2f},{obstacle_sparse},{features_detected}\n")
 
@@ -202,3 +211,5 @@ finally:
     if sim_process:
         sim_process.terminate()
         print("UE4 simulation closed.")
+    if DEBUG_DISPLAY:
+        cv2.destroyAllWindows()

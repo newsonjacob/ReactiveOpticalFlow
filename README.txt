@@ -9,6 +9,7 @@ This project implements a real-time **sparse** optical flow-based navigation sys
 * 🪟 GUI controls to reset the simulation or stop the UAV
 * 📁 Structured modular code with reusable components
 * ▶️ Automatically launches the Unreal Engine Blocks environment
+* 🖥️ Optional debug window showing tracked features when `DEBUG_DISPLAY=1`
 
 ## Project Structure
 
