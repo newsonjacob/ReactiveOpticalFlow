@@ -162,7 +162,9 @@ try:
             obstacle_sparse = False
 
         threshold = 2.5 * max(speed, 0.2)
+
         obstacle_sparse = smooth_C > threshold
+
         corridor = (
             smooth_C <= threshold
             and smooth_L > threshold
