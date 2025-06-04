@@ -29,22 +29,26 @@ def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi, displacement_
     if len(good_new) < 2:
         return False, new_pts  # Not enough points to analyze
 
-    # Filter points inside ROI
-    roi_corners = good_new[
+    # Filter points whose new position falls inside the ROI
+    roi_mask = (
         (good_new[:, 0] >= roi[0]) &
         (good_new[:, 1] >= roi[1]) &
         (good_new[:, 0] <= roi[2]) &
         (good_new[:, 1] <= roi[3])
-    ]
+    )
 
-    if len(roi_corners) < 2:
+    roi_old = good_old[roi_mask]
+    roi_new = good_new[roi_mask]
+
+    if len(roi_new) < 2:
         return False, new_pts
 
-    # Mean motion of ROI features
-    dx = np.mean(roi_corners[:, 0]) - roi_corners[0, 0]
-    dy = np.mean(roi_corners[:, 1]) - roi_corners[0, 1]
+    # Compute displacement magnitudes of ROI features
+    disp = roi_new - roi_old
+    magnitudes = np.linalg.norm(disp, axis=1)
+    avg_mag = np.mean(magnitudes)
 
-    if abs(dx) > displacement_threshold or abs(dy) > displacement_threshold:
+    if avg_mag > displacement_threshold:
         return True, new_pts
 
     return False, new_pts

@@ -29,7 +29,7 @@ ReactiveOpticalFlow/
 
 1. **Startup phase**: The UAV takes off and a few initial frames are ignored.
 2. **Tracking**: Shi–Tomasi features are tracked frame to frame using Lucas–Kanade optical flow.
-3. **Obstacle detection**: Feature displacement inside an ROI is checked against a threshold.
+3. **Obstacle detection**: The average magnitude of feature displacement within the ROI is compared to a threshold.
 4. **Navigation**: The Navigator brakes if an obstacle is detected, otherwise it moves forward.
 5. **Logging**: Frame number, time, speed, obstacle flag and feature count are written to a CSV file.
 
