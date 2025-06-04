@@ -18,7 +18,8 @@ def initialize_sparse_features(gray_frame):
     return cv2.goodFeaturesToTrack(gray_frame, mask=None, **shitomasi_params)
 
 
-def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi, displacement_threshold=5):
+def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
+                              dt=1.0, drone_speed=0.0, displacement_threshold=5):
     """
     Performs Lucas-Kanade tracking and returns:
     - obstacle_detected (bool)
@@ -52,7 +53,14 @@ def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi, displacement_
     magnitudes = np.linalg.norm(disp, axis=1)
     avg_mag = np.mean(magnitudes)
 
-    if avg_mag > displacement_threshold:
+    # Account for frame time to get displacement per second
+    if dt > 0:
+        avg_mag /= dt
+
+    # Scale threshold with current UAV speed
+    threshold = displacement_threshold * (1 + drone_speed)
+
+    if avg_mag > threshold:
         return True, new_pts
 
     return False, new_pts
