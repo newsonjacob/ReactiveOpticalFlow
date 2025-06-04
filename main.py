@@ -43,6 +43,10 @@ client.moveToPositionAsync(0, 0, -2, 2).join()
 
 navigator = Navigator(client)
 
+GRACE_FRAMES = 30  # ignore obstacle logic for startup period
+NO_FEATURE_LIMIT = 10
+no_feature_frames = 0
+
 frame_count = 0
 start_time = time.time()
 prev_time = None
@@ -117,8 +121,20 @@ try:
                     if prev_pts is not None:
                         features_detected = len(prev_pts)
 
+        print(f"📈 Features detected: {features_detected}")
+        if features_detected == 0:
+            no_feature_frames += 1
+        else:
+            no_feature_frames = 0
+
+        if no_feature_frames >= NO_FEATURE_LIMIT:
+            print("❌ No features for several frames — resetting tracker")
+            prev_gray_sparse = gray
+            prev_pts = initialize_sparse_features(prev_gray_sparse)
+            no_feature_frames = 0
+
         # Skip obstacle reaction for early frames
-        if frame_count < 20:
+        if frame_count < GRACE_FRAMES:
             obstacle_sparse = False
 
         # Navigation
@@ -145,6 +161,7 @@ try:
         cv2.putText(vis_img, f"Speed: {speed:.2f}", (10, 55), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,255), 2)
         cv2.putText(vis_img, f"State: {state_str}", (10, 85), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,255), 2)
         cv2.putText(vis_img, f"Sim Time: {time_now-start_time:.2f}s", (10, 115), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,255), 2)
+        cv2.putText(vis_img, f"Features: {features_detected}", (10, 145), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,255), 2)
 
         out.write(vis_img)
         log_file.write(f"{frame_count},{time_now:.2f},{speed:.2f},{obstacle_sparse},{features_detected}\n")

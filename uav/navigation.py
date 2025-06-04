@@ -75,7 +75,7 @@ class Navigator:
             f" speed {speed:.2f}"
         )
         self.client.moveByVelocityAsync(
-            2,
+            4,
             0,
             0,
             duration=2,
