@@ -146,6 +146,10 @@ try:
         if part_flows:
             flow_history.update(*part_flows)
         smooth_L, smooth_C, smooth_R = flow_history.average()
+        print(
+            f"[DEBUG] smoothed flows L/C/R: {smooth_L:.2f}, "
+            f"{smooth_C:.2f}, {smooth_R:.2f}"
+        )
 
         if no_feature_frames >= NO_FEATURE_LIMIT:
             print("❌ No features for several frames — resetting tracker")
@@ -158,6 +162,7 @@ try:
             obstacle_sparse = False
 
         threshold = 2.5 * max(speed, 0.2)
+        obstacle_sparse = smooth_C > threshold
         corridor = (
             smooth_C <= threshold
             and smooth_L > threshold
