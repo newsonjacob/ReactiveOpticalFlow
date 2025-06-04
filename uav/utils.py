@@ -21,7 +21,7 @@ def get_drone_state(client):
     yaw = get_yaw(ori)
     vel = state.kinematics_estimated.linear_velocity
     speed = get_speed(vel)
-    return pos, yaw, speed
+    return pos, yaw, speed, vel
 
 
 def partition_roi(roi, parts):

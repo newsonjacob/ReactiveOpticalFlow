@@ -60,11 +60,12 @@ smooth_L = smooth_C = smooth_R = 0.0
 frame_count = 0
 start_time = time.time()
 prev_time = None
+prev_vel = None
 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 os.makedirs("flow_logs", exist_ok=True)
 log_file = open(f"flow_logs/sparse_log_{timestamp}.csv", 'w')
 log_file.write(
-    "frame,time,speed,obstacle_detected,features_detected,flow_left,flow_center,flow_right,state,safe_counter\n"
+    "frame,abs_time,rel_time,pos_x,pos_y,pos_z,yaw,vx,vy,vz,speed,obstacle_detected,features_detected,flow_left,flow_center,flow_right,state,safe_counter\n"
 )
 
 # Sparse optical flow state
@@ -83,7 +84,7 @@ try:
         time_now = time.time()
         dt = 0.0 if prev_time is None else time_now - prev_time
         prev_time = time_now
-        pos, yaw, speed = get_drone_state(client)
+        pos, yaw, speed, vel = get_drone_state(client)
 
         responses = client.simGetImages([
             ImageRequest("oakd_camera", ImageType.Scene, False, True)
@@ -242,8 +243,13 @@ try:
             cv2.waitKey(1)
 
         out.write(vis_img)
+        elapsed = time_now - start_time
         log_file.write(
-            f"{frame_count},{time_now:.2f},{speed:.2f},{obstacle_sparse},{features_detected},{smooth_L:.2f},{smooth_C:.2f},{smooth_R:.2f},{state_str},{safe_counter}\n"
+            f"{frame_count},{time_now:.2f},{elapsed:.2f},"
+            f"{pos.x_val:.2f},{pos.y_val:.2f},{pos.z_val:.2f},"
+            f"{yaw:.2f},{vel.x_val:.2f},{vel.y_val:.2f},{vel.z_val:.2f},{speed:.2f},"
+            f"{obstacle_sparse},{features_detected},"
+            f"{smooth_L:.2f},{smooth_C:.2f},{smooth_R:.2f},{state_str},{safe_counter}\n"
         )
 
         if param_refs['reset_flag'][0]:
@@ -262,7 +268,7 @@ try:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             log_file = open(f"flow_logs/sparse_log_{timestamp}.csv", 'w')
             log_file.write(
-                "frame,time,speed,obstacle_detected,features_detected,flow_left,flow_center,flow_right,state,safe_counter\n"
+                "frame,abs_time,rel_time,pos_x,pos_y,pos_z,yaw,vx,vy,vz,speed,obstacle_detected,features_detected,flow_left,flow_center,flow_right,state,safe_counter\n"
             )
             out.release()
             out = cv2.VideoWriter('sparse_flow_output.avi', fourcc, 8.0, (640, 480))
