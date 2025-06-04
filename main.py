@@ -9,7 +9,7 @@ from airsim import ImageRequest, ImageType
 
 from uav.interface import exit_flag, start_gui
 from uav.navigation import Navigator
-from uav.utils import get_drone_state
+from uav.utils import get_drone_state, apply_clahe
 from sparse_optical_flow_utils import initialize_sparse_features, track_and_detect_obstacle
 
 # GUI state holder
@@ -85,6 +85,7 @@ try:
         print(f"🖼 Frame {frame_count} captured and decoded")
         img = cv2.resize(img, (640, 480))
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        gray = apply_clahe(gray)
         vis_img = img.copy()
 
         # Sparse flow detection

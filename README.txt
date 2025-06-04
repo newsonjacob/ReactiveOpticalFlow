@@ -4,7 +4,7 @@ This project implements a real-time **sparse** optical flow-based navigation sys
 
 ## Features
 
-* 🧠 Sparse Lucas-Kanade optical flow with CLAHE enhancement
+* 🧠 Sparse Lucas-Kanade optical flow with CLAHE enhancement applied before feature detection
 * ✈️ Basic navigation logic: brake when an obstacle is detected, otherwise continue forward
 * 🪟 GUI controls to reset the simulation or stop the UAV
 * 📁 Structured modular code with reusable components

@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from uav.utils import apply_clahe
 
 # Parameters
 # Tune Shi-Tomasi parameters so that more features are detected from the
@@ -15,6 +16,7 @@ def initialize_sparse_features(gray_frame):
     """
     Run Shi-Tomasi corner detection on the first grayscale frame.
     """
+    gray_frame = apply_clahe(gray_frame)
     return cv2.goodFeaturesToTrack(gray_frame, mask=None, **shitomasi_params)
 
 
@@ -25,6 +27,9 @@ def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
     - obstacle_detected (bool)
     - new_points for continued tracking
     """
+    prev_gray = apply_clahe(prev_gray)
+    curr_gray = apply_clahe(curr_gray)
+
     new_pts, status, _ = cv2.calcOpticalFlowPyrLK(prev_gray, curr_gray, prev_pts, None, **lk_params)
 
     # Filter only good points
