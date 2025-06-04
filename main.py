@@ -116,6 +116,12 @@ try:
 
         # Overlay
         pos, yaw, speed = get_drone_state(client)
+        print(
+            f"🛰️ Pos({pos.x_val:.2f}, {pos.y_val:.2f}, {pos.z_val:.2f}) "
+            f"Speed: {speed:.2f} m/s State: {state_str}"
+        )
+        if state_str == "blind_forward" and speed < 0.1:
+            print("⚠️ Blind forward but speed is low — possible premature brake")
         cv2.rectangle(vis_img, (roi[0], roi[1]), (roi[2], roi[3]), (255, 0, 0), 1)
         if obstacle_sparse:
             cv2.putText(vis_img, "Obstacle!", (400, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
