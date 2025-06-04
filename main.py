@@ -107,7 +107,6 @@ try:
         # Navigation
         state_str = "forward"
         if obstacle_sparse:
-            print("🛑 Braking")
             state_str = navigator.brake()
         else:
             state_str = navigator.blind_forward()
