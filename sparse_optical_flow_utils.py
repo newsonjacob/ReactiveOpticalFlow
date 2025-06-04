@@ -24,12 +24,26 @@ def initialize_sparse_features(gray_frame):
 def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
                               partitions=1, dt=1.0, drone_speed=0.0,
                               displacement_threshold=10):
-    """
-    Performs Lucas-Kanade tracking and returns:
-    - obstacle_detected (bool)
-    - new_points for continued tracking
-    - good_old: valid points from the previous frame
-    - good_new: corresponding new positions of valid points
+    """Track features and compute average flow for each ROI partition.
+
+    Parameters
+    ----------
+    prev_gray : ndarray
+        Previous grayscale frame.
+    curr_gray : ndarray
+        Current grayscale frame.
+    prev_pts : ndarray
+        Feature points from the previous frame.
+    roi : tuple
+        ``(x1, y1, x2, y2)`` region of interest.
+
+    Returns
+    -------
+    tuple
+        ``(new_pts, good_old, good_new, partition_avgs)`` where ``new_pts`` are
+        the re-detected features, ``good_old`` and ``good_new`` contain the
+        matched point coordinates and ``partition_avgs`` holds the average flow
+        magnitude for each ROI partition.
     """
     prev_gray = apply_clahe(prev_gray)
     curr_gray = apply_clahe(curr_gray)
@@ -41,7 +55,7 @@ def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
     good_new = new_pts[status == 1]
 
     if len(good_new) < 5:
-        return False, new_pts, good_old, good_new, [0.0] * partitions
+        return new_pts, good_old, good_new, [0.0] * partitions
 
     # Filter points in ROI
     roi_mask = (
@@ -55,7 +69,7 @@ def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
     roi_new = good_new[roi_mask]
 
     if len(roi_new) < 5:
-        return False, new_pts, good_old, good_new, [0.0] * partitions
+        return new_pts, good_old, good_new, [0.0] * partitions
 
     # Compute flow magnitude
     disp = roi_new - roi_old
