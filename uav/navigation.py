@@ -2,6 +2,7 @@
 import time
 import math
 import airsim
+from uav.logging import debug_print
 
 class Navigator:
     def __init__(self, client):
@@ -20,7 +21,7 @@ class Navigator:
         return pos, yaw, speed
 
     def brake(self):
-        print("🛑 Braking")
+        debug_print("🛑 Braking")
         self.client.moveByVelocityAsync(0, 0, 0, 1).join()
         self.braked = True
         return "brake"
@@ -31,7 +32,7 @@ class Navigator:
         elif smooth_R < smooth_L - 10:
             direction = "right"
         else:
-            print("❌ Dodge ambiguous — skipping")
+            debug_print("❌ Dodge ambiguous — skipping")
             return "no_dodge"
 
         lateral = 1.0 if direction == "right" else -1.0
@@ -43,7 +44,7 @@ class Navigator:
         # Decide forward speed
         forward_speed = 0.0 if smooth_C > 1.0 else 0.3
 
-        print(f"🔀 Dodging {direction} (strength {strength:.1f}, forward {forward_speed:.1f})")
+        debug_print(f"🔀 Dodging {direction} (strength {strength:.1f}, forward {forward_speed:.1f})")
         self.client.moveByVelocityBodyFrameAsync(
             forward_speed,
             lateral * strength,
@@ -58,7 +59,7 @@ class Navigator:
 
 
     def resume_forward(self):
-        print("✅ Resuming forward motion")
+        debug_print("✅ Resuming forward motion")
         self.client.moveByVelocityAsync(2, 0, 0, duration=3,
             drivetrain=airsim.DrivetrainType.ForwardOnly,
             yaw_mode=airsim.YawMode(False, 0))
@@ -69,7 +70,7 @@ class Navigator:
 
     def blind_forward(self):
         pos, _, speed = self.get_state()
-        print(
+        debug_print(
             f"⚠️ No features — continuing blind forward motion \n"
             f"   Start pos ({pos.x_val:.2f}, {pos.y_val:.2f}, {pos.z_val:.2f})"
             f" speed {speed:.2f}"
@@ -83,23 +84,23 @@ class Navigator:
             yaw_mode=airsim.YawMode(False, 0),
         )
         pos_after, _, speed_after = self.get_state()
-        print(
+        debug_print(
             f"   After command pos ({pos_after.x_val:.2f}, {pos_after.y_val:.2f},"
             f" {pos_after.z_val:.2f}) speed {speed_after:.2f}"
         )
         self.last_movement_time = time.time()
         if speed_after < 0.1:
-            print("   ⚠️ Blind forward issued but UAV not moving")
+            debug_print("   ⚠️ Blind forward issued but UAV not moving")
         return "blind_forward"
 
     def nudge(self):
-        print("⚠️ Low flow + zero velocity — nudging forward")
+        debug_print("⚠️ Low flow + zero velocity — nudging forward")
         self.client.moveByVelocityAsync(0.5, 0, 0, 1).join()
         self.last_movement_time = time.time()
         return "nudge"
 
     def reinforce(self):
-        print("🔁 Reinforcing forward motion")
+        debug_print("🔁 Reinforcing forward motion")
         self.client.moveByVelocityAsync(2, 0, 0, duration=3,
             drivetrain=airsim.DrivetrainType.ForwardOnly,
             yaw_mode=airsim.YawMode(False, 0))
@@ -107,7 +108,7 @@ class Navigator:
         return "resume_reinforce"
 
     def timeout_recover(self):
-        print("⏳ Timeout — forcing recovery motion")
+        debug_print("⏳ Timeout — forcing recovery motion")
         self.client.moveByVelocityAsync(0.5, 0, 0, 1).join()
         self.last_movement_time = time.time()
         return "timeout_nudge"

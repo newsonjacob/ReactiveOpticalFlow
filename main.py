@@ -11,6 +11,7 @@ from uav.interface import exit_flag, start_gui
 from uav.navigation import Navigator
 from uav.utils import get_drone_state, partition_roi
 from uav.perception import FlowHistory
+from uav.logging import debug_print
 from sparse_optical_flow_utils import initialize_sparse_features, track_and_detect_obstacle
 
 # GUI state holder
@@ -98,7 +99,7 @@ try:
             print("❌ Failed to decode image")
             continue
 
-        print(f"🖼 Frame {frame_count} captured and decoded")
+        debug_print(f"🖼 Frame {frame_count} captured and decoded")
         img = cv2.resize(img, (640, 480))
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         vis_img = img.copy()
@@ -114,8 +115,8 @@ try:
             prev_pts = initialize_sparse_features(prev_gray_sparse)
             if prev_pts is not None:
                 features_detected = len(prev_pts)
-                print(f"🔍 Initialized {features_detected} features")
-            print("🔧 First grayscale frame set")
+                debug_print(f"🔍 Initialized {features_detected} features")
+            debug_print("🔧 First grayscale frame set")
         else:
             obstacle_sparse, prev_pts, good_old, good_new, part_flows = track_and_detect_obstacle(
                 prev_gray_sparse,
@@ -132,12 +133,12 @@ try:
             if prev_pts is not None:
                 features_detected = len(prev_pts)
                 if features_detected < 10:
-                    print("🔁 Too few features — reinitializing")
+                    debug_print("🔁 Too few features — reinitializing")
                     prev_pts = initialize_sparse_features(prev_gray_sparse)
                     if prev_pts is not None:
                         features_detected = len(prev_pts)
 
-        print(f"📈 Features detected: {features_detected}")
+        debug_print(f"📈 Features detected: {features_detected}")
         if features_detected == 0:
             no_feature_frames += 1
         else:
@@ -146,13 +147,13 @@ try:
         if part_flows:
             flow_history.update(*part_flows)
         smooth_L, smooth_C, smooth_R = flow_history.average()
-        print(
+        debug_print(
             f"[DEBUG] smoothed flows L/C/R: {smooth_L:.2f}, "
             f"{smooth_C:.2f}, {smooth_R:.2f}"
         )
 
         if no_feature_frames >= NO_FEATURE_LIMIT:
-            print("❌ No features for several frames — resetting tracker")
+            debug_print("❌ No features for several frames — resetting tracker")
             prev_gray_sparse = gray
             prev_pts = initialize_sparse_features(prev_gray_sparse)
             no_feature_frames = 0
@@ -189,7 +190,7 @@ try:
         else:
             if navigator.braked or navigator.dodging:
                 safe_counter += 1
-                print(f"[DEBUG] clear frames: {safe_counter}/{SAFE_FRAMES}")
+                debug_print(f"[DEBUG] clear frames: {safe_counter}/{SAFE_FRAMES}")
 
                 if safe_counter >= SAFE_FRAMES:
                     state_str = navigator.resume_forward()
@@ -205,12 +206,12 @@ try:
         param_refs['state'][0] = state_str
 
         # Overlay
-        print(
+        debug_print(
             f"🛰️ Pos({pos.x_val:.2f}, {pos.y_val:.2f}, {pos.z_val:.2f}) "
             f"Speed: {speed:.2f} m/s State: {state_str}"
         )
         if state_str == "blind_forward" and speed < 0.1:
-            print("⚠️ Blind forward but speed is low — possible premature brake")
+            debug_print("⚠️ Blind forward but speed is low — possible premature brake")
         cv2.rectangle(vis_img, (roi[0], roi[1]), (roi[2], roi[3]), (255, 0, 0), 1)
         for part in roi_parts:
             cv2.rectangle(vis_img, (part[0], part[1]), (part[2], part[3]), (0, 0, 255), 1)
