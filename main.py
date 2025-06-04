@@ -51,6 +51,8 @@ GRACE_FRAMES = 30  # ignore obstacle logic for startup period
 NO_FEATURE_LIMIT = 10
 no_feature_frames = 0
 PARTITIONS = 3
+SAFE_FRAMES = 5  # frames without obstacles before resuming after a brake
+safe_counter = 0
 flow_history = FlowHistory(alpha=0.5)
 smooth_L = smooth_C = smooth_R = 0.0
 
@@ -156,9 +158,18 @@ try:
         # Navigation
         state_str = "forward"
         if obstacle_sparse:
+            safe_counter = 0
             state_str = navigator.brake()
         else:
-            state_str = navigator.blind_forward()
+            if navigator.braked:
+                safe_counter += 1
+                if safe_counter >= SAFE_FRAMES:
+                    state_str = navigator.resume_forward()
+                    safe_counter = 0
+                else:
+                    state_str = navigator.brake()
+            else:
+                state_str = navigator.blind_forward()
 
         param_refs['state'][0] = state_str
 
