@@ -22,3 +22,30 @@ def get_drone_state(client):
     vel = state.kinematics_estimated.linear_velocity
     speed = get_speed(vel)
     return pos, yaw, speed
+
+
+def partition_roi(roi, parts):
+    """Split a ROI into equal vertical partitions.
+
+    Parameters
+    ----------
+    roi : sequence
+        ``(x1, y1, x2, y2)`` coordinates of the region of interest.
+    parts : int
+        Number of vertical partitions to create.
+
+    Returns
+    -------
+    list of tuple
+        List of partition ROIs ``[(x1, y1, x2, y2), ...]``.
+    """
+    x1, y1, x2, y2 = roi
+    width = x2 - x1
+    part_w = width // parts
+    partitions = []
+    for i in range(parts):
+        px1 = x1 + i * part_w
+        px2 = x1 + (i + 1) * part_w if i < parts - 1 else x2
+        partitions.append((px1, y1, px2, y2))
+    return partitions
+
