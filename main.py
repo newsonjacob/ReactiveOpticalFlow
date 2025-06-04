@@ -51,6 +51,8 @@ GRACE_FRAMES = 30  # ignore obstacle logic for startup period
 NO_FEATURE_LIMIT = 10
 no_feature_frames = 0
 PARTITIONS = 3
+SAFE_FRAMES = 5  # frames without obstacles before resuming after a brake
+safe_counter = 0
 flow_history = FlowHistory(alpha=0.5)
 smooth_L = smooth_C = smooth_R = 0.0
 
@@ -60,7 +62,9 @@ prev_time = None
 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 os.makedirs("flow_logs", exist_ok=True)
 log_file = open(f"flow_logs/sparse_log_{timestamp}.csv", 'w')
-log_file.write("frame,time,speed,obstacle_detected,features_detected,flow_left,flow_center,flow_right\n")
+log_file.write(
+    "frame,time,speed,obstacle_detected,features_detected,flow_left,flow_center,flow_right,state,safe_counter\n"
+)
 
 # Sparse optical flow state
 prev_gray_sparse = None
@@ -156,9 +160,19 @@ try:
         # Navigation
         state_str = "forward"
         if obstacle_sparse:
+            safe_counter = 0
             state_str = navigator.brake()
         else:
-            state_str = navigator.blind_forward()
+            if navigator.braked:
+                safe_counter += 1
+                print(f"[DEBUG] clear frames: {safe_counter}/{SAFE_FRAMES}")
+                if safe_counter >= SAFE_FRAMES:
+                    state_str = navigator.resume_forward()
+                    safe_counter = 0
+                else:
+                    state_str = navigator.brake()
+            else:
+                state_str = navigator.blind_forward()
 
         param_refs['state'][0] = state_str
 
@@ -200,7 +214,7 @@ try:
 
         out.write(vis_img)
         log_file.write(
-            f"{frame_count},{time_now:.2f},{speed:.2f},{obstacle_sparse},{features_detected},{smooth_L:.2f},{smooth_C:.2f},{smooth_R:.2f}\n"
+            f"{frame_count},{time_now:.2f},{speed:.2f},{obstacle_sparse},{features_detected},{smooth_L:.2f},{smooth_C:.2f},{smooth_R:.2f},{state_str},{safe_counter}\n"
         )
 
         if param_refs['reset_flag'][0]:
@@ -219,7 +233,7 @@ try:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             log_file = open(f"flow_logs/sparse_log_{timestamp}.csv", 'w')
             log_file.write(
-                "frame,time,speed,obstacle_detected,features_detected,flow_left,flow_center,flow_right\n"
+                "frame,time,speed,obstacle_detected,features_detected,flow_left,flow_center,flow_right,state,safe_counter\n"
             )
             out.release()
             out = cv2.VideoWriter('sparse_flow_output.avi', fourcc, 8.0, (640, 480))

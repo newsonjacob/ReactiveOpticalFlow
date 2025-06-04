@@ -5,7 +5,7 @@ This project implements a real-time **sparse** optical flow-based navigation sys
 ## Features
 
 * 🧠 Sparse Lucas-Kanade optical flow with CLAHE enhancement applied before feature detection
-* ✈️ Basic navigation logic: brake when an obstacle is detected, otherwise continue forward
+* ✈️ Basic navigation logic: brake when an obstacle is detected and automatically resume once clear
 * 🪟 GUI controls to reset the simulation or stop the UAV
 * 📁 Structured modular code with reusable components
 * ▶️ Automatically launches the Unreal Engine Blocks environment
@@ -33,9 +33,10 @@ ReactiveOpticalFlow/
    first 30 frames so that feature tracking can stabilize.
 2. **Tracking**: Shi–Tomasi features are tracked frame to frame using Lucas–Kanade optical flow.
 3. **Obstacle detection**: The average magnitude of feature displacement within the ROI is compared to a threshold.
-4. **Navigation**: The Navigator brakes if an obstacle is detected, otherwise it moves forward.
-5. **Logging**: Frame number, time, speed, obstacle flag and feature count are
-   written to a CSV file and overlaid in the output video.
+4. **Navigation**: The Navigator brakes if an obstacle is detected and resumes forward flight once the path is clear.
+5. **Logging**: Frame number, time, speed, obstacle flag, feature count, flow
+   magnitudes and the current state are written to a CSV file and overlaid in
+   the output video.
 6. **Feature fallback**: If no features are detected for several consecutive
    frames the tracker is reset and the UAV continues forward blindly.
 
@@ -59,8 +60,8 @@ ReactiveOpticalFlow/
 ## Example Log Format
 
 ```
-frame,time,speed,obstacle_detected,features_detected
-42,13.23,1.50,True,63
+frame,time,speed,obstacle_detected,features_detected,flow_left,flow_center,flow_right,state,safe_counter
+42,13.23,1.50,True,63,0.45,0.31,0.48,brake,0
 ```
 
 ## Future Improvements
