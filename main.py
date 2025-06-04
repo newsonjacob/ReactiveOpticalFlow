@@ -31,6 +31,7 @@ ue4_exe = os.environ.get(
     "BLOCKS_EXE_PATH",
     r"C:\Users\newso\Documents\AirSimExperiments\BlocksBuild\WindowsNoEditor\Blocks\Binaries\Win64\Blocks.exe",
 )
+sim_process = None
 try:
     sim_process = subprocess.Popen([ue4_exe, "-windowed", "-ResX=1280", "-ResY=720"])
     print("Launching Unreal Engine simulation...")
@@ -170,15 +171,7 @@ try:
         else:
             threshold = 350.0  # keep it fixed for now
 
-        # Then calculate corridor
-        corridor = (
-            smooth_C <= threshold
-            and smooth_L > threshold
-            and smooth_R > threshold
-        )
-
-
-        # Calculate corridor condition
+        # Then calculate corridor condition
         corridor = (
             smooth_C <= threshold
             and smooth_L > threshold
