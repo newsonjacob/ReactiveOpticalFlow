@@ -34,8 +34,9 @@ ReactiveOpticalFlow/
 2. **Tracking**: Shi–Tomasi features are tracked frame to frame using Lucas–Kanade optical flow.
 3. **Obstacle detection**: The average magnitude of feature displacement within the ROI is compared to a threshold.
 4. **Navigation**: The Navigator brakes if an obstacle is detected and resumes forward flight once the path is clear.
-5. **Logging**: Frame number, time, speed, obstacle flag and feature count are
-   written to a CSV file and overlaid in the output video.
+5. **Logging**: Frame number, time, speed, obstacle flag, feature count, flow
+   magnitudes and the current state are written to a CSV file and overlaid in
+   the output video.
 6. **Feature fallback**: If no features are detected for several consecutive
    frames the tracker is reset and the UAV continues forward blindly.
 
@@ -59,8 +60,8 @@ ReactiveOpticalFlow/
 ## Example Log Format
 
 ```
-frame,time,speed,obstacle_detected,features_detected
-42,13.23,1.50,True,63
+frame,time,speed,obstacle_detected,features_detected,flow_left,flow_center,flow_right,state,safe_counter
+42,13.23,1.50,True,63,0.45,0.31,0.48,brake,0
 ```
 
 ## Future Improvements
