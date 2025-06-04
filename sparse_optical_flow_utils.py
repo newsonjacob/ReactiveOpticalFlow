@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from uav.utils import apply_clahe, partition_roi
+from uav.logging import debug_print
 
 # Parameters
 # Tune Shi-Tomasi parameters so that more features are detected from the
@@ -89,13 +90,13 @@ def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
     effective_speed = max(drone_speed, 0.2)
     threshold = displacement_threshold * effective_speed
 
-    print(
+    debug_print(
         f"[DEBUG] ROI avg flow: {avg_mag:.2f}, "
         f"Threshold: {threshold:.2f}, Speed: {drone_speed:.2f}"
     )
     if partitions >= 3:
         flows_str = ", ".join(f"{p:.2f}" for p in partition_avgs)
-        print(f"[DEBUG] Partition flows L/C/R: {flows_str}")
+        debug_print(f"[DEBUG] Partition flows L/C/R: {flows_str}")
 
     obstacle_detected = False
     if partitions >= 3:
