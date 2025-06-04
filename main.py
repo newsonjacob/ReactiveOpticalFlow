@@ -48,7 +48,7 @@ client.moveToPositionAsync(0, 0, -2, 2).join()
 
 navigator = Navigator(client)
 
-GRACE_FRAMES = 30  # ignore obstacle logic for startup period
+GRACE_FRAMES = 10  # ignore obstacle logic for startup period
 NO_FEATURE_LIMIT = 10
 no_feature_frames = 0
 PARTITIONS = 3
@@ -172,16 +172,6 @@ try:
             obstacle_sparse = smooth_C > threshold
             if corridor:
                 obstacle_sparse = False
-
-        threshold = 2.5 * max(speed, 0.2)
-        obstacle_sparse = smooth_C > threshold
-        corridor = (
-            smooth_C <= threshold
-            and smooth_L > threshold
-            and smooth_R > threshold
-        )
-        if corridor:
-            obstacle_sparse = False
 
         # Navigation
         state_str = "forward"
