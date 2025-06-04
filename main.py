@@ -123,7 +123,7 @@ try:
                 debug_print(f"🔍 Initialized {features_detected} features")
             debug_print("🔧 First grayscale frame set")
         else:
-            obstacle_sparse, prev_pts, good_old, good_new, part_flows = track_and_detect_obstacle(
+            prev_pts, good_old, good_new, part_flows = track_and_detect_obstacle(
                 prev_gray_sparse,
                 gray,
                 prev_pts,
@@ -163,18 +163,20 @@ try:
             prev_pts = initialize_sparse_features(prev_gray_sparse)
             no_feature_frames = 0
 
-        threshold = max(MIN_FLOW_THRESHOLD, 2.5 * max(speed, 0.2))
+        # threshold = max(MIN_FLOW_THRESHOLD, 2.5 * max(speed, 0.2))
+        # Determine threshold first
+        if frame_count < GRACE_FRAMES:
+            threshold = float('inf')
+        else:
+            threshold = 350.0  # keep it fixed for now
+
+        # Then calculate corridor
         corridor = (
             smooth_C <= threshold
             and smooth_L > threshold
             and smooth_R > threshold
         )
 
-        # Update threshold (disable obstacle logic during grace period)
-        if frame_count < GRACE_FRAMES:
-            threshold = float('inf')  # block obstacle detection entirely
-        else:
-            threshold = max(MIN_FLOW_THRESHOLD, 2.5 * max(speed, 0.2))
 
         # Calculate corridor condition
         corridor = (
