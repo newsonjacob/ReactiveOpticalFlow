@@ -55,7 +55,7 @@ def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
     good_new = new_pts[status == 1]
 
     if len(good_new) < 5:
-        return False, new_pts, good_old, good_new, [0.0] * partitions
+        return new_pts, good_old, good_new, [0.0] * partitions
 
     # Filter points in ROI
     roi_mask = (
@@ -69,7 +69,7 @@ def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
     roi_new = good_new[roi_mask]
 
     if len(roi_new) < 5:
-        return False, new_pts, good_old, good_new, [0.0] * partitions
+        return new_pts, good_old, good_new, [0.0] * partitions
 
     # Compute flow magnitude
     disp = roi_new - roi_old
