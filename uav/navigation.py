@@ -68,11 +68,28 @@ class Navigator:
         return "resume"
 
     def blind_forward(self):
-        print("⚠️ No features — continuing blind forward motion")
-        self.client.moveByVelocityAsync(2, 0, 0, duration=2,
+        pos, _, speed = self.get_state()
+        print(
+            f"⚠️ No features — continuing blind forward motion \n"
+            f"   Start pos ({pos.x_val:.2f}, {pos.y_val:.2f}, {pos.z_val:.2f})"
+            f" speed {speed:.2f}"
+        )
+        self.client.moveByVelocityAsync(
+            2,
+            0,
+            0,
+            duration=2,
             drivetrain=airsim.DrivetrainType.ForwardOnly,
-            yaw_mode=airsim.YawMode(False, 0))
+            yaw_mode=airsim.YawMode(False, 0),
+        )
+        pos_after, _, speed_after = self.get_state()
+        print(
+            f"   After command pos ({pos_after.x_val:.2f}, {pos_after.y_val:.2f},"
+            f" {pos_after.z_val:.2f}) speed {speed_after:.2f}"
+        )
         self.last_movement_time = time.time()
+        if speed_after < 0.1:
+            print("   ⚠️ Blind forward issued but UAV not moving")
         return "blind_forward"
 
     def nudge(self):
