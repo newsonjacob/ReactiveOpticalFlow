@@ -26,6 +26,8 @@ def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
     Performs Lucas-Kanade tracking and returns:
     - obstacle_detected (bool)
     - new_points for continued tracking
+    - good_old: valid points from the previous frame
+    - good_new: corresponding new positions of valid points
     """
     prev_gray = apply_clahe(prev_gray)
     curr_gray = apply_clahe(curr_gray)
@@ -37,7 +39,8 @@ def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
     good_new = new_pts[status == 1]
 
     if len(good_new) < 2:
-        return False, new_pts  # Not enough points to analyze
+        # Not enough points to analyze
+        return False, new_pts, np.array([]), np.array([])
 
     # Filter points whose new position falls inside the ROI
     roi_mask = (
@@ -51,7 +54,8 @@ def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
     roi_new = good_new[roi_mask]
 
     if len(roi_new) < 2:
-        return False, new_pts
+        # Not enough points inside ROI for obstacle detection
+        return False, new_pts, good_old, good_new
 
     # Compute displacement magnitudes of ROI features
     disp = roi_new - roi_old
@@ -66,6 +70,6 @@ def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
     threshold = displacement_threshold * (1 + drone_speed)
 
     if avg_mag > threshold:
-        return True, new_pts
+        return True, new_pts, good_old, good_new
 
-    return False, new_pts
+    return False, new_pts, good_old, good_new

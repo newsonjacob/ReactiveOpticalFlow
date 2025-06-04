@@ -93,6 +93,8 @@ try:
         img = cv2.resize(img, (640, 480))
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         vis_img = img.copy()
+        good_old = np.empty((0, 2), dtype=np.float32)
+        good_new = np.empty((0, 2), dtype=np.float32)
 
         # Sparse flow detection
         obstacle_sparse = False
@@ -105,7 +107,7 @@ try:
                 print(f"🔍 Initialized {features_detected} features")
             print("🔧 First grayscale frame set")
         else:
-            obstacle_sparse, prev_pts = track_and_detect_obstacle(
+            obstacle_sparse, prev_pts, good_old, good_new = track_and_detect_obstacle(
                 prev_gray_sparse,
                 gray,
                 prev_pts,
@@ -165,6 +167,13 @@ try:
         cv2.putText(vis_img, f"State: {state_str}", (10, 85), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,255), 2)
         cv2.putText(vis_img, f"Sim Time: {time_now-start_time:.2f}s", (10, 115), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,255), 2)
         cv2.putText(vis_img, f"Features: {features_detected}", (10, 145), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,255), 2)
+
+        # Draw flow vectors
+        for pt_old, pt_new in zip(good_old, good_new):
+            x1, y1 = pt_old.ravel()
+            x2, y2 = pt_new.ravel()
+            cv2.arrowedLine(vis_img, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 1, tipLength=0.3)
+            cv2.circle(vis_img, (int(x2), int(y2)), 2, (0, 255, 0), -1)
 
         if DEBUG_DISPLAY and prev_pts is not None:
             for p in prev_pts:
