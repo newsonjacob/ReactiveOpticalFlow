@@ -40,6 +40,7 @@ navigator = Navigator(client)
 
 frame_count = 0
 start_time = time.time()
+prev_time = None
 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 os.makedirs("flow_logs", exist_ok=True)
 log_file = open(f"flow_logs/sparse_log_{timestamp}.csv", 'w')
@@ -58,6 +59,9 @@ try:
     while not exit_flag[0]:
         frame_count += 1
         time_now = time.time()
+        dt = 0.0 if prev_time is None else time_now - prev_time
+        prev_time = time_now
+        pos, yaw, speed = get_drone_state(client)
 
         responses = client.simGetImages([
             ImageRequest("oakd_camera", ImageType.Scene, False, True)
@@ -89,7 +93,15 @@ try:
                 print(f"🔍 Initialized {features_detected} features")
             print("🔧 First grayscale frame set")
         else:
-            obstacle_sparse, prev_pts = track_and_detect_obstacle(prev_gray_sparse, gray, prev_pts, roi, displacement_threshold=2.5)
+            obstacle_sparse, prev_pts = track_and_detect_obstacle(
+                prev_gray_sparse,
+                gray,
+                prev_pts,
+                roi,
+                dt=dt,
+                drone_speed=speed,
+                displacement_threshold=2.5,
+            )
 
             prev_gray_sparse = gray.copy()
             if prev_pts is not None:
@@ -115,7 +127,6 @@ try:
         param_refs['state'][0] = state_str
 
         # Overlay
-        pos, yaw, speed = get_drone_state(client)
         print(
             f"🛰️ Pos({pos.x_val:.2f}, {pos.y_val:.2f}, {pos.z_val:.2f}) "
             f"Speed: {speed:.2f} m/s State: {state_str}"
