@@ -49,6 +49,7 @@ client.moveToPositionAsync(0, 0, -2, 2).join()
 navigator = Navigator(client)
 
 GRACE_FRAMES = 10  # ignore obstacle logic for startup period
+MIN_FLOW_THRESHOLD = 1.0  # ignore jitter below this flow magnitude
 NO_FEATURE_LIMIT = 10
 no_feature_frames = 0
 PARTITIONS = 3
@@ -159,7 +160,7 @@ try:
             prev_pts = initialize_sparse_features(prev_gray_sparse)
             no_feature_frames = 0
 
-        threshold = 2.5 * max(speed, 0.2)
+        threshold = max(MIN_FLOW_THRESHOLD, 2.5 * max(speed, 0.2))
         corridor = (
             smooth_C <= threshold
             and smooth_L > threshold
