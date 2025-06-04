@@ -1,41 +1,37 @@
 # UAV Optical Flow Navigation System
 
-This project implements a real-time optical flow-based navigation system for an unmanned aerial vehicle (UAV) in the AirSim simulation environment. The UAV uses computer vision to detect motion in its environment and perform obstacle avoidance by braking, dodging, or nudging forward based on dynamic scene analysis.
+This project implements a real-time **sparse** optical flow-based navigation system for an unmanned aerial vehicle (UAV) in the AirSim simulation environment. The UAV uses computer vision to detect motion and brake when an obstacle is detected in a region of interest (ROI).
 
 ## Features
 
-* 🧠 Optical flow tracking using Lucas-Kanade method with CLAHE enhancement
-* 📊 Flow history smoothing for left, center, and right partitions
-* ✈️ Autonomous decision logic: brake, dodge, resume, and blind forward
-* 🪟 GUI button to end the simulation safely
+* 🧠 Sparse Lucas-Kanade optical flow with CLAHE enhancement
+* ✈️ Basic navigation logic: brake when an obstacle is detected, otherwise continue forward
+* 🪟 GUI controls to reset the simulation or stop the UAV
 * 📁 Structured modular code with reusable components
+* ▶️ Automatically launches the Unreal Engine Blocks environment
 
 ## Project Structure
 
 ```
-AirSimExperiments/
-├── main.py               # Entry point of the program
+ReactiveOpticalFlow/
+├── main.py               # Entry point
+├── airsim/               # Minimal AirSim Python client
 ├── uav/
-│   ├── __init__.py       # Makes the uav folder a module
-│   ├── perception.py     # Optical flow tracker and flow history
-│   ├── navigation.py     # Obstacle avoidance and motion logic
-│   └── interface.py      # GUI stop button
-├── flow_logs/            # Output directory for log files
-└── README.md             # You're here!
+│   ├── perception.py     # Optical flow tracking utilities
+│   ├── navigation.py     # Motion commands
+│   ├── interface.py      # GUI controls
+│   └── utils.py          # Helper functions
+├── flow_logs/            # CSV logs of each run
+└── README.txt            # You're here!
 ```
 
 ## How It Works
 
-1. **Startup phase**: The UAV takes off and waits a few frames to stabilize.
-2. **Tracking**: Optical flow tracks features between consecutive grayscale images.
-3. **Analysis**: Magnitude of motion vectors is averaged across image partitions.
-4. **Navigation decisions**:
-
-   * Brake if the central region indicates rapid approaching flow.
-   * Dodge if there's an obstacle in front but one side is safer.
-   * Resume or reinforce forward motion otherwise.
-   * Nudge if stuck with low flow and low speed.
-5. **Logging**: Each frame’s data is saved to CSV for analysis.
+1. **Startup phase**: The UAV takes off and a few initial frames are ignored.
+2. **Tracking**: Shi–Tomasi features are tracked frame to frame using Lucas–Kanade optical flow.
+3. **Obstacle detection**: Feature displacement inside an ROI is checked against a threshold.
+4. **Navigation**: The Navigator brakes if an obstacle is detected, otherwise it moves forward.
+5. **Logging**: Frame number, time, speed, obstacle flag and feature count are written to a CSV file.
 
 ## Requirements
 
@@ -46,19 +42,19 @@ AirSimExperiments/
 
 ## Running the Simulation
 
-1. Launch the AirSim Unreal environment.
-2. Run the script:
+1. Launch the AirSim environment or let `main.py` start the Blocks executable configured inside the script.
+2. Run the program:
 
    ```bash
    python main.py
    ```
-3. Click the GUI stop button to end the simulation cleanly.
+3. Use the GUI window to reset or stop the simulation.
 
 ## Example Log Format
 
 ```
-frame,time,features,flow_left,flow_center,flow_right
-42,13.23,117,4.320,10.827,6.910
+frame,time,speed,obstacle_detected,features_detected
+42,13.23,1.50,True,63
 ```
 
 ## Future Improvements
