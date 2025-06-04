@@ -157,13 +157,22 @@ try:
         if frame_count < GRACE_FRAMES:
             obstacle_sparse = False
 
+        threshold = 2.5 * max(speed, 0.2)
+        corridor = (
+            smooth_C <= threshold
+            and smooth_L > threshold
+            and smooth_R > threshold
+        )
+        if corridor:
+            obstacle_sparse = False
+
         # Navigation
         state_str = "forward"
         if obstacle_sparse:
             safe_counter = 0
-            state_str = navigator.brake()
+            state_str = navigator.dodge(smooth_L, smooth_C, smooth_R)
         else:
-            if navigator.braked:
+            if navigator.braked or navigator.dodging:
                 safe_counter += 1
                 print(f"[DEBUG] clear frames: {safe_counter}/{SAFE_FRAMES}")
 
@@ -171,7 +180,10 @@ try:
                     state_str = navigator.resume_forward()
                     safe_counter = 0
                 else:
-                    state_str = navigator.brake()
+                    if navigator.braked:
+                        state_str = navigator.brake()
+                    else:
+                        state_str = "dodge"
             else:
                 state_str = navigator.blind_forward()
 

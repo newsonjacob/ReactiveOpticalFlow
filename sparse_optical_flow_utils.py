@@ -91,7 +91,11 @@ def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
 
     print(f"[DEBUG] ROI avg flow: {avg_mag:.2f}, Threshold: {threshold:.2f}, Speed: {drone_speed:.2f}")
 
-    if avg_mag > threshold:
-        return True, new_pts, good_old, good_new, partition_avgs
+    obstacle_detected = False
+    if partitions >= 3:
+        center_flow = partition_avgs[partitions // 2]
+        obstacle_detected = center_flow > threshold
+    else:
+        obstacle_detected = avg_mag > threshold
 
-    return False, new_pts, good_old, good_new, partition_avgs
+    return obstacle_detected, new_pts, good_old, good_new, partition_avgs
