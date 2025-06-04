@@ -21,7 +21,7 @@ def initialize_sparse_features(gray_frame):
 
 
 def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
-                              dt=1.0, drone_speed=0.0, displacement_threshold=5):
+                              dt=1.0, drone_speed=0.0, displacement_threshold=10):
     """
     Performs Lucas-Kanade tracking and returns:
     - obstacle_detected (bool)
@@ -38,11 +38,10 @@ def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
     good_old = prev_pts[status == 1]
     good_new = new_pts[status == 1]
 
-    if len(good_new) < 2:
-        # Not enough points to analyze
-        return False, new_pts, np.array([]), np.array([])
+    if len(good_new) < 5:
+        return False, new_pts
 
-    # Filter points whose new position falls inside the ROI
+    # Filter points in ROI
     roi_mask = (
         (good_new[:, 0] >= roi[0]) &
         (good_new[:, 1] >= roi[1]) &
@@ -53,23 +52,25 @@ def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
     roi_old = good_old[roi_mask]
     roi_new = good_new[roi_mask]
 
-    if len(roi_new) < 2:
-        # Not enough points inside ROI for obstacle detection
-        return False, new_pts, good_old, good_new
+    if len(roi_new) < 5:
+        return False, new_pts
 
-    # Compute displacement magnitudes of ROI features
+    # Compute flow magnitude
     disp = roi_new - roi_old
     magnitudes = np.linalg.norm(disp, axis=1)
     avg_mag = np.mean(magnitudes)
 
-    # Account for frame time to get displacement per second
+    # Normalize by frame time
     if dt > 0:
         avg_mag /= dt
 
-    # Scale threshold with current UAV speed
-    threshold = displacement_threshold * (1 + drone_speed)
+    # Clamp speed to avoid instability
+    effective_speed = max(drone_speed, 0.2)
+    threshold = displacement_threshold * effective_speed
+
+    print(f"[DEBUG] ROI avg flow: {avg_mag:.2f}, Threshold: {threshold:.2f}, Speed: {drone_speed:.2f}")
 
     if avg_mag > threshold:
         return True, new_pts, good_old, good_new
 
-    return False, new_pts, good_old, good_new
+    return False, new_pts
