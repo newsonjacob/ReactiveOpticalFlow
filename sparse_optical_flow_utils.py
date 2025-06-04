@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from uav.utils import apply_clahe
+from uav.utils import apply_clahe, partition_roi
 
 # Parameters
 # Tune Shi-Tomasi parameters so that more features are detected from the
@@ -21,7 +21,8 @@ def initialize_sparse_features(gray_frame):
 
 
 def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
-                              dt=1.0, drone_speed=0.0, displacement_threshold=10):
+                              partitions=1, dt=1.0, drone_speed=0.0,
+                              displacement_threshold=10):
     """
     Performs Lucas-Kanade tracking and returns:
     - obstacle_detected (bool)
@@ -39,7 +40,7 @@ def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
     good_new = new_pts[status == 1]
 
     if len(good_new) < 5:
-        return False, new_pts
+        return False, new_pts, good_old, good_new, [0.0] * partitions
 
     # Filter points in ROI
     roi_mask = (
@@ -53,16 +54,36 @@ def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
     roi_new = good_new[roi_mask]
 
     if len(roi_new) < 5:
-        return False, new_pts
+        return False, new_pts, good_old, good_new, [0.0] * partitions
 
     # Compute flow magnitude
     disp = roi_new - roi_old
     magnitudes = np.linalg.norm(disp, axis=1)
     avg_mag = np.mean(magnitudes)
 
+    # Flow by partition
+    partition_avgs = []
+    for px1, py1, px2, py2 in partition_roi(roi, partitions):
+        mask = (
+            (roi_new[:, 0] >= px1) &
+            (roi_new[:, 0] < px2) &
+            (roi_new[:, 1] >= py1) &
+            (roi_new[:, 1] <= py2)
+        )
+        part_old = roi_old[mask]
+        part_new = roi_new[mask]
+        if len(part_new) == 0:
+            partition_avgs.append(0.0)
+            continue
+        part_disp = part_new - part_old
+        part_mag = np.linalg.norm(part_disp, axis=1)
+        part_avg = np.mean(part_mag)
+        partition_avgs.append(part_avg)
+
     # Normalize by frame time
     if dt > 0:
         avg_mag /= dt
+        partition_avgs = [p / dt for p in partition_avgs]
 
     # Clamp speed to avoid instability
     effective_speed = max(drone_speed, 0.2)
@@ -71,6 +92,6 @@ def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
     print(f"[DEBUG] ROI avg flow: {avg_mag:.2f}, Threshold: {threshold:.2f}, Speed: {drone_speed:.2f}")
 
     if avg_mag > threshold:
-        return True, new_pts, good_old, good_new
+        return True, new_pts, good_old, good_new, partition_avgs
 
-    return False, new_pts
+    return False, new_pts, good_old, good_new, partition_avgs

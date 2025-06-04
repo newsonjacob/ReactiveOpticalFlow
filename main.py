@@ -9,7 +9,8 @@ from airsim import ImageRequest, ImageType
 
 from uav.interface import exit_flag, start_gui
 from uav.navigation import Navigator
-from uav.utils import get_drone_state
+from uav.utils import get_drone_state, partition_roi
+from uav.perception import FlowHistory
 from sparse_optical_flow_utils import initialize_sparse_features, track_and_detect_obstacle
 
 # GUI state holder
@@ -49,6 +50,9 @@ navigator = Navigator(client)
 GRACE_FRAMES = 30  # ignore obstacle logic for startup period
 NO_FEATURE_LIMIT = 10
 no_feature_frames = 0
+PARTITIONS = 3
+flow_history = FlowHistory(alpha=0.5)
+smooth_L = smooth_C = smooth_R = 0.0
 
 frame_count = 0
 start_time = time.time()
@@ -56,12 +60,13 @@ prev_time = None
 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 os.makedirs("flow_logs", exist_ok=True)
 log_file = open(f"flow_logs/sparse_log_{timestamp}.csv", 'w')
-log_file.write("frame,time,speed,obstacle_detected,features_detected\n")
+log_file.write("frame,time,speed,obstacle_detected,features_detected,flow_left,flow_center,flow_right\n")
 
 # Sparse optical flow state
 prev_gray_sparse = None
 prev_pts = None
 roi = [60, 60, 580, 420]  # wider and more forgiving ROI
+roi_parts = partition_roi(roi, PARTITIONS)
 
 # Video writer
 fourcc = cv2.VideoWriter_fourcc(*'MJPG')
@@ -95,6 +100,7 @@ try:
         vis_img = img.copy()
         good_old = np.empty((0, 2), dtype=np.float32)
         good_new = np.empty((0, 2), dtype=np.float32)
+        part_flows = [0.0] * PARTITIONS
 
         # Sparse flow detection
         obstacle_sparse = False
@@ -107,11 +113,12 @@ try:
                 print(f"🔍 Initialized {features_detected} features")
             print("🔧 First grayscale frame set")
         else:
-            obstacle_sparse, prev_pts, good_old, good_new = track_and_detect_obstacle(
+            obstacle_sparse, prev_pts, good_old, good_new, part_flows = track_and_detect_obstacle(
                 prev_gray_sparse,
                 gray,
                 prev_pts,
                 roi,
+                partitions=PARTITIONS,
                 dt=dt,
                 drone_speed=speed,
                 displacement_threshold=2.5,
@@ -131,6 +138,10 @@ try:
             no_feature_frames += 1
         else:
             no_feature_frames = 0
+
+        if part_flows:
+            flow_history.update(*part_flows)
+        smooth_L, smooth_C, smooth_R = flow_history.average()
 
         if no_feature_frames >= NO_FEATURE_LIMIT:
             print("❌ No features for several frames — resetting tracker")
@@ -159,6 +170,8 @@ try:
         if state_str == "blind_forward" and speed < 0.1:
             print("⚠️ Blind forward but speed is low — possible premature brake")
         cv2.rectangle(vis_img, (roi[0], roi[1]), (roi[2], roi[3]), (255, 0, 0), 1)
+        for part in roi_parts:
+            cv2.rectangle(vis_img, (part[0], part[1]), (part[2], part[3]), (0, 0, 255), 1)
         if obstacle_sparse:
             cv2.putText(vis_img, "Obstacle!", (400, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
@@ -167,6 +180,9 @@ try:
         cv2.putText(vis_img, f"State: {state_str}", (10, 85), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,255), 2)
         cv2.putText(vis_img, f"Sim Time: {time_now-start_time:.2f}s", (10, 115), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,255), 2)
         cv2.putText(vis_img, f"Features: {features_detected}", (10, 145), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,255), 2)
+        cv2.putText(vis_img, f"Flow L: {smooth_L:.2f}", (10, 175), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,255), 2)
+        cv2.putText(vis_img, f"Flow C: {smooth_C:.2f}", (10, 205), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,255), 2)
+        cv2.putText(vis_img, f"Flow R: {smooth_R:.2f}", (10, 235), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,255), 2)
 
         # Draw flow vectors
         for pt_old, pt_new in zip(good_old, good_new):
@@ -183,7 +199,9 @@ try:
             cv2.waitKey(1)
 
         out.write(vis_img)
-        log_file.write(f"{frame_count},{time_now:.2f},{speed:.2f},{obstacle_sparse},{features_detected}\n")
+        log_file.write(
+            f"{frame_count},{time_now:.2f},{speed:.2f},{obstacle_sparse},{features_detected},{smooth_L:.2f},{smooth_C:.2f},{smooth_R:.2f}\n"
+        )
 
         if param_refs['reset_flag'][0]:
             print("🔄 Resetting simulation...")
@@ -200,7 +218,9 @@ try:
             log_file.close()
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             log_file = open(f"flow_logs/sparse_log_{timestamp}.csv", 'w')
-            log_file.write("frame,time,speed,obstacle_detected,features_detected\n")
+            log_file.write(
+                "frame,time,speed,obstacle_detected,features_detected,flow_left,flow_center,flow_right\n"
+            )
             out.release()
             out = cv2.VideoWriter('sparse_flow_output.avi', fourcc, 8.0, (640, 480))
 
