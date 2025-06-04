@@ -81,10 +81,11 @@ def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
         part_avg = np.mean(part_mag)
         partition_avgs.append(part_avg)
 
-    # Normalize by frame time
-    if dt > 0:
-        avg_mag /= dt
-        partition_avgs = [p / dt for p in partition_avgs]
+    # Normalize by frame time with stability clamp
+    safe_dt = max(dt, 0.05)  # Clamp to minimum 20 FPS (0.05s)
+    avg_mag /= safe_dt
+    partition_avgs = [p / safe_dt for p in partition_avgs]
+
 
     # Clamp speed to avoid instability
     effective_speed = max(drone_speed, 0.2)
@@ -98,11 +99,4 @@ def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
         flows_str = ", ".join(f"{p:.2f}" for p in partition_avgs)
         debug_print(f"[DEBUG] Partition flows L/C/R: {flows_str}")
 
-    obstacle_detected = False
-    if partitions >= 3:
-        center_flow = partition_avgs[partitions // 2]
-        obstacle_detected = center_flow > threshold
-    else:
-        obstacle_detected = avg_mag > threshold
-
-    return obstacle_detected, new_pts, good_old, good_new, partition_avgs
+    return new_pts, good_old, good_new, partition_avgs
