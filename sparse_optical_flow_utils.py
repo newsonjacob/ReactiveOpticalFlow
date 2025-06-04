@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from uav.utils import apply_clahe
 
 # Parameters
 # Tune Shi-Tomasi parameters so that more features are detected from the
@@ -15,6 +16,7 @@ def initialize_sparse_features(gray_frame):
     """
     Run Shi-Tomasi corner detection on the first grayscale frame.
     """
+    gray_frame = apply_clahe(gray_frame)
     return cv2.goodFeaturesToTrack(gray_frame, mask=None, **shitomasi_params)
 
 
@@ -24,7 +26,12 @@ def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
     Performs Lucas-Kanade tracking and returns:
     - obstacle_detected (bool)
     - new_points for continued tracking
+    - good_old: valid points from the previous frame
+    - good_new: corresponding new positions of valid points
     """
+    prev_gray = apply_clahe(prev_gray)
+    curr_gray = apply_clahe(curr_gray)
+
     new_pts, status, _ = cv2.calcOpticalFlowPyrLK(prev_gray, curr_gray, prev_pts, None, **lk_params)
 
     # Filter only good points
@@ -64,7 +71,6 @@ def track_and_detect_obstacle(prev_gray, curr_gray, prev_pts, roi,
     print(f"[DEBUG] ROI avg flow: {avg_mag:.2f}, Threshold: {threshold:.2f}, Speed: {drone_speed:.2f}")
 
     if avg_mag > threshold:
-        return True, new_pts
+        return True, new_pts, good_old, good_new
 
     return False, new_pts
-
