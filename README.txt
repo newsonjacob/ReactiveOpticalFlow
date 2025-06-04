@@ -42,7 +42,7 @@ ReactiveOpticalFlow/
 
 ## Running the Simulation
 
-1. Launch the AirSim environment or let `main.py` start the Blocks executable configured inside the script.
+1. Launch the AirSim environment or let `main.py` start the Blocks executable. Set the `BLOCKS_EXE_PATH` environment variable to the location of your `Blocks.exe` file if it differs from the default.
 2. Run the program:
 
    ```bash

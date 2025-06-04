@@ -20,7 +20,12 @@ param_refs = {
 start_gui(param_refs)
 
 # === Launch Unreal Engine simulation ===
-ue4_exe = r"C:\Users\newso\Documents\AirSimExperiments\BlocksBuild\WindowsNoEditor\Blocks\Binaries\Win64\Blocks.exe"
+# Path to the Blocks executable. This can be overridden by setting the
+# BLOCKS_EXE_PATH environment variable.
+ue4_exe = os.environ.get(
+    "BLOCKS_EXE_PATH",
+    r"C:\Users\newso\Documents\AirSimExperiments\BlocksBuild\WindowsNoEditor\Blocks\Binaries\Win64\Blocks.exe",
+)
 try:
     sim_process = subprocess.Popen([ue4_exe, "-windowed", "-ResX=1280", "-ResY=720"])
     print("Launching Unreal Engine simulation...")
